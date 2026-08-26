@@ -1,0 +1,230 @@
+# Forked from ECSpanse 0.10.1 https://github.com/iacobson/ecspanse/releases/tag/v0.10.1
+# Modifications Copyright (C) 2026 Aaron Schmidlkofer
+
+defmodule Spearmint.Component do
+  @moduledoc """
+  The `Spearmint.Component` is the basic building block of the ECS architecture, holding the entity state.
+  The components are defined by invoking `use Spearmint.Component` in their module definition.
+
+  An entity cannot exist without at least a component.
+  And the other way around, a component cannot exist without being allocated to an entity.
+  The components hold their own state, and can also be tagged for easy grouping.
+
+  There are two ways of providing the components with their initial state and tags:
+
+  1. At compile time, when invoking the `use Spearmint.Component`, by providing the `:state` and `:tags` options.
+    ```elixir
+    defmodule Demo.Components.Position do
+      use Spearmint.Component, state: [x: 3, y: 5], tags: [:map]
+    end
+    ```
+
+  2. At runtime when creating the components from specs: `t:Spearmint.Component.component_spec()`:
+    ```elixir
+    Spearmint.Command.spawn_entity!({Spearmint.Entity,
+      components: [
+        Hero,
+        {Demo.Components.Position, [x: 7, y: 2], [:map]},
+      ]
+    )
+
+    # or
+
+    Spearmint.Command.add_component!(hero_entity, {Demo.Components.Position, [x: 7, y: 2], [:map]})
+    ```
+
+  After being created, components become structs with the provided fields, along with some metadata added by the framework.
+  Components can also be used as an entity label, without state.
+
+  There are some special components that are created automatically by the framework:
+  - `Spearmint.Component.Children` - holds the list of child entities.
+  - `Spearmint.Component.Parents` - holds the parent entities.
+
+  ## Options
+
+  - `:state` - a list with all the component state struct keys and their initial values (if any).
+  For example: `[:amount, max_amount: 100]`
+  - `:tags` - list of atoms that act as tags for the current component. Defaults to [].
+  - `:export_filter` - :none | :component | :entity - indicates if the component should be exported.
+  Defaults to `:none`. See `Spearmint.Snapshot` for details.
+    - `:none` - no filter. The component will be exported.
+    - `:component` - the component will not be exported.
+    - `:entity` - the whole entity containing the component will not be exported.
+
+  > #### Tags  {: .info}
+  > Tags can be added at compile time, and at runtime **only** when creating a new component.
+  > They cannot be edited or removed later on for the existing component.
+  >
+  > The List of tags added at compile time is merged with the one provided at run time.
+  """
+
+  @typedoc """
+  A `component_spec` is the definition required to create a component.
+
+  ## Examples
+
+    ```elixir
+    Demo.Components.Gold
+    {Demo.Components.Gold, [amount: 5]}
+    {Demo.Components.Gold, [amount: 5], [:resource, :available]}
+    {Demo.Components.Gold, [], [:resource, :available]}
+    ```
+  """
+  @type component_spec ::
+          (component_module :: module())
+          | {component_module :: module(), initial_state :: keyword()}
+          | {component_module :: module(), initial_state :: keyword(), tags :: list(atom())}
+
+  @doc """
+  **Optional** callback to validate the component state.
+  It takes the component state struct as the only argument and returns `:ok` or an error tuple.
+
+  > #### Info  {: .error}
+  > When an error tuple is returned, it raises an exception with the provided error message.
+
+  > #### Note  {: .info}
+  > For more complex validations, Ecto schemaless changesets may be useful.
+  > - [docs](https://hexdocs.pm/ecto/Ecto.Changeset.html#module-schemaless-changesets)
+  > - [article](https://medium.com/very-big-things/towards-maintainable-elixir-the-core-and-the-interface-c267f0da43)
+
+  ## Examples
+
+    ```elixir
+    defmodule Demo.Components.Gold do
+      use Spearmint.Component, state: [amount: 0]
+
+      def validate(%__MODULE__{amount: amount}) do
+        if amount >= 0 do
+          :ok
+        else
+          {:error, "Gold amount cannot be negative"}
+        end
+      end
+    end
+    ```
+  """
+  @callback validate(component :: struct()) :: :ok | {:error, any()}
+
+  @doc """
+  Fetches the component for an entity. It has the same functionality as `Spearmint.Query.fetch_component/2`,
+  but it may be more convenient to use in some cases.
+
+  > #### Implemented Callback  {: .tip}
+  > This callback is implemented by the library and can be used as such.
+
+  ## Examples:
+
+    ``` elixir
+      {:ok, %Demo.Components.Position{} = position_component} = Demo.Components.Position.fetch(hero_entity)
+
+      # it's the same as:
+
+      {:ok, %Demo.Components.Position{} = position_component} = Spearmint.Query.fetch_component(hero_entity, Demo.Components.Position)
+    ```
+  """
+  @doc group: :implemented
+  @callback fetch(entity :: Spearmint.Entity.t()) ::
+              {:ok, component :: struct()} | {:error, :not_found}
+
+  @doc """
+  Lists all components of the current type for all entities.
+
+  > #### Implemented Callback  {: .tip}
+  > This callback is implemented by the library and can be used as such.
+
+  ## Examples:
+
+    ```elixir
+    enemy_components = Demo.Components.Enemy.list()
+    ```
+  """
+  @doc group: :implemented
+  @callback list() :: list(component :: struct())
+
+  @optional_callbacks validate: 1
+
+  defmodule Meta do
+    @moduledoc false
+    # should not be present in the docs
+
+    @type t :: %__MODULE__{
+            entity: Spearmint.Entity.t(),
+            module: module(),
+            tags: MapSet.t(atom()),
+            export_filter: :none | :component | :entity
+          }
+
+    @enforce_keys [:entity, :module, :export_filter]
+    defstruct entity: nil, module: nil, tags: [], export_filter: :none
+  end
+
+  defmacro __using__(opts) do
+    quote bind_quoted: [opts: opts], location: :keep do
+      @behaviour Spearmint.Component
+
+      tags = Keyword.get(opts, :tags, [])
+      export_filter = Keyword.get(opts, :export_filter, :none)
+
+      unless is_list(tags) && Enum.all?(tags, &is_atom/1) do
+        raise ArgumentError,
+              "Invalid tags for Component: #{Kernel.inspect(__MODULE__)}. The `:tags` option must be a list of atoms."
+      end
+
+      unless export_filter in [:none, :component, :entity] do
+        raise ArgumentError,
+              "Invalid export_filter option for Component: #{Kernel.inspect(__MODULE__)}. The `:export_filter` option must be :none | :component | :entity."
+      end
+
+      Module.register_attribute(__MODULE__, :ecs_type, accumulate: false)
+      Module.register_attribute(__MODULE__, :tags, accumulate: false)
+      Module.register_attribute(__MODULE__, :export_filter, accumulate: false)
+      Module.put_attribute(__MODULE__, :ecs_type, :component)
+      Module.put_attribute(__MODULE__, :tags, tags)
+      Module.put_attribute(__MODULE__, :export_filter, export_filter)
+
+      state! = Keyword.get(opts, :state, [])
+
+      unless is_list(state!) do
+        raise ArgumentError,
+              "Invalid state for Component: #{Kernel.inspect(__MODULE__)}. The `:state` option must be a list with all the Component state struct keys and their initial values (if any). Eg: [:foo, :bar, baz: 1]"
+      end
+
+      state! = Keyword.put(state!, :__meta__, nil)
+
+      @enforce_keys [:__meta__]
+      defstruct state!
+
+      ### Internal functions ###
+      # not exposed in the docs
+
+      @doc false
+      def __ecs_type__ do
+        @ecs_type
+      end
+
+      @doc false
+      def __component_tags__ do
+        @tags
+      end
+
+      @doc false
+      def __export_filter__ do
+        @export_filter
+      end
+
+      @impl Spearmint.Component
+      def fetch(entity) do
+        Spearmint.Query.fetch_component(entity, __MODULE__)
+      end
+
+      @impl Spearmint.Component
+      def list do
+        {__MODULE__}
+        |> Spearmint.Query.select()
+        |> Spearmint.Query.stream()
+        |> Stream.map(fn {component} -> component end)
+        |> Enum.to_list()
+      end
+    end
+  end
+end
