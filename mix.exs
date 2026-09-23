@@ -6,9 +6,9 @@ defmodule Spearmint.MixProject do
 
   def project do
     [
-      app: :Spearmint,
+      app: :spearmint,
+      name: "Spearmint",
       version: @version,
-      name: "spearmint",
       elixir: "~> 1.20",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -51,7 +51,7 @@ defmodule Spearmint.MixProject do
 
   defp package do
     [
-      maintainers: ["ComradeComputer"],
+      maintainers: ["Aaron Schmidlkofer"],
       licenses: ["Apache-2.0"],
       links: %{{"GitHub", "https://github.com/Comrade-Computer/Spearmint"}}
     ]
