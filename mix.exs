@@ -6,10 +6,9 @@ defmodule Spearmint.MixProject do
 
   def project do
     [
-      app: :spearmint,
+      app: :Spearmint,
       version: @version,
       name: "spearmint",
-      licenses: "Apache-2.0",
       elixir: "~> 1.20",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -46,7 +45,6 @@ defmodule Spearmint.MixProject do
       {:ex_doc, "~> 0.40.3", only: :dev, runtime: false, warn_if_outdated: true},
       {:ex2ms, "~> 1.7", warn_if_outdated: true},
       {:excoveralls, "~> 0.18", only: :test, warn_if_outdated: true},
-      {:lua, "~> 1.0", warn_if_outdated: true},
       {:memoize, "~> 1.4", warn_if_outdated: true}
     ]
   end
@@ -54,7 +52,8 @@ defmodule Spearmint.MixProject do
   defp package do
     [
       maintainers: ["ComradeComputer"],
-      licenses: ["Apache-2.0"]
+      licenses: ["Apache-2.0"],
+      links: %{{"GitHub", "https://github.com/Comrade-Computer/Spearmint"}}
     ]
   end
 
