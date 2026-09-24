@@ -12,8 +12,6 @@ defmodule Spearmint.Query do
 
   # TODO THIS IS A CORE PLACE WHERE THE SINGLETON ASSUMPTION LIVES
 
-  use Memoize
-
   alias __MODULE__
   alias Spearmint.Component
   alias Spearmint.Entity
@@ -337,7 +335,7 @@ defmodule Spearmint.Query do
   end
 
   @doc false
-  defmemo memo_list_children(%Entity{id: entity_id}), max_waiter: 1000, waiter_sleep_ms: 0 do
+  def memo_list_children(%Entity{id: entity_id}) do
     result =
       try do
         :ets.lookup(Util.components_state_ets_table(), {entity_id, Component.Children})
@@ -372,7 +370,7 @@ defmodule Spearmint.Query do
   end
 
   @doc false
-  defmemo memo_list_descendants(%Entity{} = entity), max_waiter: 1000, waiter_sleep_ms: 0 do
+  def memo_list_descendants(%Entity{} = entity) do
     list_descendants_entities([entity], [])
   end
 
@@ -392,7 +390,7 @@ defmodule Spearmint.Query do
   end
 
   @doc false
-  defmemo memo_list_parents(%Entity{id: entity_id}), max_waiter: 1000, waiter_sleep_ms: 0 do
+  def memo_list_parents(%Entity{id: entity_id}) do
     result =
       try do
         :ets.lookup(Util.components_state_ets_table(), {entity_id, Component.Parents})
@@ -423,11 +421,6 @@ defmodule Spearmint.Query do
   @doc group: :relationships
   @spec list_ancestors(Spearmint.Entity.t()) :: list(Spearmint.Entity.t())
   def list_ancestors(%Entity{} = entity) do
-    memo_list_ancestors(entity)
-  end
-
-  @doc false
-  defmemo memo_list_ancestors(%Entity{} = entity), max_waiter: 1000, waiter_sleep_ms: 0 do
     list_ancestors_entities([entity], [])
   end
 
@@ -889,9 +882,7 @@ defmodule Spearmint.Query do
   end
 
   @doc false
-  defmemo memo_has_children_with_components?(entity, component_module_list),
-    max_waiter: 1000,
-    waiter_sleep_ms: 0 do
+  def memo_has_children_with_components?(entity, component_module_list) do
     components =
       component_module_list
       |> List.to_tuple()
@@ -935,9 +926,7 @@ defmodule Spearmint.Query do
   end
 
   @doc false
-  defmemo memo_has_parents_with_components?(entity, component_module_list),
-    max_waiter: 1000,
-    waiter_sleep_ms: 0 do
+  def memo_has_parents_with_components?(entity, component_module_list) do
     components =
       component_module_list
       |> List.to_tuple()

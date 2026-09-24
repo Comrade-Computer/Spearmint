@@ -1883,9 +1883,6 @@ defmodule Spearmint.Command do
     case duplicates do
       [] ->
         :ets.insert(table, components)
-
-        invalidate_cache_on_create_and_delete(components)
-
         :ok
 
       _else ->
@@ -1906,13 +1903,6 @@ defmodule Spearmint.Command do
     case duplicates do
       [] ->
         :ets.insert(table, components)
-
-        invalidate =
-          Task.async(fn ->
-            maybe_invalidate_cache_on_relation_update(components)
-          end)
-
-        Task.await(invalidate)
         :ok
 
       _else ->
@@ -1929,62 +1919,7 @@ defmodule Spearmint.Command do
       :ets.delete(table, key)
     end)
 
-    invalidate_cache_on_create_and_delete(components)
-
     :ok
-  end
-
-  defp maybe_invalidate_cache_on_relation_update(components) do
-    relation_updates =
-      Enum.any?(components, fn {{_entity_id, module}, _tags, _component} ->
-        module in [Spearmint.Component.Children, Spearmint.Component.Parents]
-      end)
-
-    if relation_updates do
-      # invalidate the cache when updating Children or Parents
-      Util.invalidate_query_cache()
-    end
-  end
-
-  defp invalidate_cache_on_create_and_delete(components) do
-    i1 =
-      Task.async(fn ->
-        Util.invalidate_cache()
-      end)
-
-    i2 =
-      Task.async(fn ->
-        maybe_invalidate_tags_cache(components)
-      end)
-
-    i3 =
-      Task.async(fn ->
-        maybe_invalidate_timer_tag_cache(components)
-      end)
-
-    Task.await_many([i1, i2, i3])
-  end
-
-  defp maybe_invalidate_tags_cache(components) do
-    components_with_tags =
-      Enum.any?(components, fn {{_entity_id, _module}, tags, _component} -> Enum.any?(tags) end)
-
-    if components_with_tags do
-      Util.invalidate_tags_cache()
-    end
-  end
-
-  defp maybe_invalidate_timer_tag_cache(components) do
-    timer_component_tag = Spearmint.Template.Component.Timer.timer_component_tag()
-
-    components_with_timer_tag =
-      Enum.any?(components, fn {{_entity_id, _module}, tags, _component} ->
-        timer_component_tag in tags
-      end)
-
-    if components_with_timer_tag do
-      Util.invalidate_timer_tag_cache()
-    end
   end
 
   # helper

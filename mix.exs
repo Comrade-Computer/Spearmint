@@ -44,8 +44,7 @@ defmodule Spearmint.MixProject do
       {:elixir_uuid, "~> 1.2", warn_if_outdated: true},
       {:ex_doc, "~> 0.40.3", only: :dev, runtime: false, warn_if_outdated: true},
       {:ex2ms, "~> 1.7", warn_if_outdated: true},
-      {:excoveralls, "~> 0.18", only: :test, warn_if_outdated: true},
-      {:memoize, "~> 1.4", warn_if_outdated: true}
+      {:excoveralls, "~> 0.18", only: :test, warn_if_outdated: true}
     ]
   end
 

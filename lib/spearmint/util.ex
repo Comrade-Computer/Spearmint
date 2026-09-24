@@ -6,8 +6,6 @@ defmodule Spearmint.Util do
   # utility functions to be used inside the library
   # should not be exposed in the docs
 
-  use Memoize
-
   require Ex2ms
 
   @doc false
@@ -62,9 +60,7 @@ defmodule Spearmint.Util do
   @doc false
   # Returns a map with entity_id as key and a list of component modules as value
   # Example %{"entity_id" => [Component1, Component2]}
-  defmemo list_entities_components,
-    max_waiter: 1000,
-    waiter_sleep_ms: 0 do
+  def list_entities_components() do
     f =
       Ex2ms.fun do
         {{entity_id, component_module}, _component_tags, _component_state} ->
@@ -90,9 +86,7 @@ defmodule Spearmint.Util do
   @doc false
   # Optimization for filtering components by tags
   # The operation is expensive when checking all components in an application with many components
-  defmemo filter_entities_components_tags(tags),
-    max_waiter: 1000,
-    waiter_sleep_ms: 0 do
+  def filter_entities_components_tags(tags) do
     tags_set = MapSet.new(tags)
 
     list_entities_components_tags()
@@ -105,9 +99,7 @@ defmodule Spearmint.Util do
   @doc false
   # Implementation dedicated to the timer components, and the timer system
   # The cache is invalidated only if timer components are added or removed
-  defmemo filter_timer_entities_components_tags,
-    max_waiter: 1000,
-    waiter_sleep_ms: 0 do
+  def filter_timer_entities_components_tags do
     timer_component_tag = Spearmint.Template.Component.Timer.timer_component_tag()
     filter_entities_components_tags([timer_component_tag])
   end
@@ -215,31 +207,5 @@ defmodule Spearmint.Util do
   def server_not_started_error do
     "Spearmint Server not started. The module invoking `use Spearmint` needs to be added to the aplication supervision tree."
   end
-
   # coveralls-ignore-stop
-
-  @doc false
-  @spec invalidate_cache() :: any()
-  def invalidate_cache do
-    Memoize.invalidate(Spearmint.Query)
-    Memoize.invalidate(Spearmint.Util, :list_entities_components)
-  end
-
-  @doc false
-  @spec invalidate_tags_cache() :: any()
-  def invalidate_tags_cache do
-    Memoize.invalidate(Spearmint.Util, :filter_entities_components_tags)
-  end
-
-  @doc false
-  @spec invalidate_timer_tag_cache() :: any()
-  def invalidate_timer_tag_cache do
-    Memoize.invalidate(Spearmint.Util, :filter_timer_entities_components_tags)
-  end
-
-  @doc false
-  @spec invalidate_query_cache() :: any()
-  def invalidate_query_cache do
-    Memoize.invalidate(Spearmint.Query)
-  end
 end
