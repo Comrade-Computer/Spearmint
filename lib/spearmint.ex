@@ -222,12 +222,6 @@ defmodule Spearmint do
       ) do
     opts = merge_system_options(opts, data.system_set_options)
 
-    if Keyword.get(opts, :run_after) do
-      Logger.warning(
-        "The :run_after option is ignored by sync running systems. Those will always run in the order they were added to the data."
-      )
-    end
-
     system =
       add_run_conditions(
         %Spearmint.System{module: system_module, queue: :frame_start_systems, execution: :sync},
@@ -364,12 +358,6 @@ defmodule Spearmint do
         opts \\ []
       ) do
     opts = merge_system_options(opts, data.system_set_options)
-
-    if Keyword.get(opts, :run_after) do
-      Logger.warning(
-        "The :run_after option is ignored by sync running systems. Those will always run in the order they were added to the data."
-      )
-    end
 
     system =
       add_run_conditions(
@@ -520,15 +508,7 @@ defmodule Spearmint do
 
     event = prepare_event(event_spec, batch_key)
 
-    try do
-      :ets.insert(Util.events_ets_table(), event)
-    rescue
-      e ->
-        case :ets.info(Util.events_ets_table()) do
-          :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-          _else -> reraise e, __STACKTRACE__
-        end
-    end
+    :ets.insert(Util.events_ets_table(), event)
 
     :ok
   end

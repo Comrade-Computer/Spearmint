@@ -266,16 +266,7 @@ defmodule Spearmint.Query do
         {{^entity_id, _component_module}, _component_tags, _component_state} -> ^entity_id
       end
 
-    result =
-      try do
-        :ets.select(Util.components_state_ets_table(), f, 1)
-      rescue
-        e ->
-          case :ets.info(Util.components_state_ets_table()) do
-            :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-            _else -> reraise e, __STACKTRACE__
-          end
-      end
+    result = :ets.select(Util.components_state_ets_table(), f, 1)
 
     case result do
       {[^entity_id], _continuation} ->
@@ -336,16 +327,7 @@ defmodule Spearmint.Query do
 
   @doc false
   def memo_list_children(%Entity{id: entity_id}) do
-    result =
-      try do
-        :ets.lookup(Util.components_state_ets_table(), {entity_id, Component.Children})
-      rescue
-        e ->
-          case :ets.info(Util.components_state_ets_table()) do
-            :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-            _else -> reraise e, __STACKTRACE__
-          end
-      end
+    result = :ets.lookup(Util.components_state_ets_table(), {entity_id, Component.Children})
 
     case result do
       [{_key, _tags, %Component.Children{entities: children_entities}}] -> children_entities
@@ -391,16 +373,7 @@ defmodule Spearmint.Query do
 
   @doc false
   def memo_list_parents(%Entity{id: entity_id}) do
-    result =
-      try do
-        :ets.lookup(Util.components_state_ets_table(), {entity_id, Component.Parents})
-      rescue
-        e ->
-          case :ets.info(Util.components_state_ets_table()) do
-            :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-            _else -> reraise e, __STACKTRACE__
-          end
-      end
+    result = :ets.lookup(Util.components_state_ets_table(), {entity_id, Component.Parents})
 
     case result do
       [{_key, _tags, %Component.Parents{entities: parents_entities}}] -> parents_entities
@@ -502,16 +475,7 @@ defmodule Spearmint.Query do
 
     filtered_entities_components_tags
     |> Stream.map(fn {entity_id, comp_module, _tags_set} ->
-      result =
-        try do
-          :ets.lookup(table, {entity_id, comp_module})
-        rescue
-          e ->
-            case :ets.info(table) do
-              :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-              _else -> reraise e, __STACKTRACE__
-            end
-        end
+      result = :ets.lookup(table, {entity_id, comp_module})
 
       case result do
         [{_key, _tags, comp_state}] -> comp_state
@@ -580,16 +544,7 @@ defmodule Spearmint.Query do
       entity_id in entity_ids
     end)
     |> Stream.map(fn {entity_id, comp_module, _tags_set} ->
-      result =
-        try do
-          :ets.lookup(table, {entity_id, comp_module})
-        rescue
-          e ->
-            case :ets.info(table) do
-              :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-              _else -> reraise e, __STACKTRACE__
-            end
-        end
+      result = :ets.lookup(table, {entity_id, comp_module})
 
       case result do
         [{_key, _tags, comp_state}] -> comp_state
@@ -703,16 +658,7 @@ defmodule Spearmint.Query do
   @spec fetch_component(Spearmint.Entity.t(), module()) ::
           {:ok, component_state :: struct()} | {:error, :not_found}
   def fetch_component(%Entity{id: entity_id}, component_module) do
-    result =
-      try do
-        :ets.lookup(Util.components_state_ets_table(), {entity_id, component_module})
-      rescue
-        e ->
-          case :ets.info(Util.components_state_ets_table()) do
-            :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-            _else -> reraise e, __STACKTRACE__
-          end
-      end
+    result = :ets.lookup(Util.components_state_ets_table(), {entity_id, component_module})
 
     case result do
       [{_key, _tags, component}] -> {:ok, component}
@@ -776,15 +722,7 @@ defmodule Spearmint.Query do
           component_state
       end
 
-    try do
-      :ets.select(table, f)
-    rescue
-      e ->
-        case :ets.info(table) do
-          :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-          _else -> reraise e, __STACKTRACE__
-        end
-    end
+    :ets.select(table, f)
   end
 
   @doc """
@@ -950,16 +888,7 @@ defmodule Spearmint.Query do
   @spec fetch_resource(resource_module :: module()) ::
           {:ok, resource_state :: struct()} | {:error, :not_found}
   def fetch_resource(resource_module) do
-    result =
-      try do
-        :ets.lookup(Util.resources_state_ets_table(), resource_module)
-      rescue
-        e ->
-          case :ets.info(Util.resources_state_ets_table()) do
-            :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-            _else -> reraise e, __STACKTRACE__
-          end
-      end
+    result = :ets.lookup(Util.resources_state_ets_table(), resource_module)
 
     case result do
       [{_key, resource}] -> {:ok, resource}
@@ -1187,16 +1116,7 @@ defmodule Spearmint.Query do
   # add mandatory components to the select tuple
   defp add_select_components(select_tuple, comp_modules, entity_id, components_state_ets_table) do
     Enum.reduce(comp_modules, select_tuple, fn comp_module, acc ->
-      result =
-        try do
-          :ets.lookup(components_state_ets_table, {entity_id, comp_module})
-        rescue
-          e ->
-            case :ets.info(components_state_ets_table) do
-              :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-              _else -> reraise e, __STACKTRACE__
-            end
-        end
+      result = :ets.lookup(components_state_ets_table, {entity_id, comp_module})
 
       case result do
         [{_key, _tags, comp_state}] -> Tuple.insert_at(acc, tuple_size(acc), comp_state)
@@ -1215,16 +1135,7 @@ defmodule Spearmint.Query do
          components_state_ets_table
        ) do
     Enum.reduce(comp_modules, select_tuple, fn comp_module, acc ->
-      result =
-        try do
-          :ets.lookup(components_state_ets_table, {entity_id, comp_module})
-        rescue
-          e ->
-            case :ets.info(components_state_ets_table) do
-              :undefined -> reraise Util.server_not_started_error(), __STACKTRACE__
-              _else -> reraise e, __STACKTRACE__
-            end
-        end
+      result = :ets.lookup(components_state_ets_table, {entity_id, comp_module})
 
       case result do
         [{_key, _tags, comp_state}] -> Tuple.insert_at(acc, tuple_size(acc), comp_state)

@@ -67,20 +67,9 @@ defmodule Spearmint.Util do
           {entity_id, component_module}
       end
 
-    try do
-      components_state_ets_table()
-      |> :ets.select(f)
-      |> Enum.group_by(fn {k, _v} -> k end, fn {_k, v} -> v end)
-    rescue
-      # coveralls-ignore-start
-      e ->
-        case :ets.info(components_state_ets_table()) do
-          :undefined -> reraise server_not_started_error(), __STACKTRACE__
-          _else -> reraise e, __STACKTRACE__
-        end
-
-        # coveralls-ignore-stop
-    end
+    components_state_ets_table()
+    |> :ets.select(f)
+    |> Enum.group_by(fn {k, _v} -> k end, fn {_k, v} -> v end)
   end
 
   @doc false
@@ -114,18 +103,7 @@ defmodule Spearmint.Util do
           {entity_id, component_module, component_tags_set}
       end
 
-    try do
-      :ets.select(components_state_ets_table(), f)
-    rescue
-      # coveralls-ignore-start
-      e ->
-        case :ets.info(components_state_ets_table()) do
-          :undefined -> reraise server_not_started_error(), __STACKTRACE__
-          _else -> reraise e, __STACKTRACE__
-        end
-
-        # coveralls-ignore-stop
-    end
+    :ets.select(components_state_ets_table(), f)
   end
 
   @doc false
@@ -143,18 +121,7 @@ defmodule Spearmint.Util do
           {id, component_tags_set, component_state}
       end
 
-    try do
-      :ets.select(components_state_ets_table(), f)
-    rescue
-      # coveralls-ignore-start
-      e ->
-        case :ets.info(components_state_ets_table()) do
-          :undefined -> reraise server_not_started_error(), __STACKTRACE__
-          _else -> reraise e, __STACKTRACE__
-        end
-
-        # coveralls-ignore-stop
-    end
+    :ets.select(components_state_ets_table(), f)
   end
 
   @doc false
@@ -199,13 +166,4 @@ defmodule Spearmint.Util do
     _exception ->
       reraise exception, attributes, __STACKTRACE__
   end
-
-  @doc false
-  # TODO Remove, this will be impossible in the future
-  # coveralls-ignore-start
-  @spec server_not_started_error() :: String.t()
-  def server_not_started_error do
-    "Spearmint Server not started. The module invoking `use Spearmint` needs to be added to the aplication supervision tree."
-  end
-  # coveralls-ignore-stop
 end
