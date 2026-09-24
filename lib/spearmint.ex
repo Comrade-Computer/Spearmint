@@ -34,7 +34,7 @@ defmodule Spearmint do
 
   ```elixir
   defmodule TestServer1 do
-    use Spearmint, fps_limit: 60, version: 1
+    use Spearmint, version: 1
 
     def setup(data) do
       data
@@ -54,16 +54,9 @@ defmodule Spearmint do
   ## Configuration
 
   The following configuration options are available:
-  - `:fps_limit` (optional) - integer or :unlimited - the maximum number of frames per second. Defaults to :unlimited.
   - `:version` (optional) - non negative integer - the version of the ECS game logic.
   Can be used to determine backwards compatibility when saving and loading state(see `Spearmint.Snapshot` for details).
   Defaults to 0.
-
-
-  # Special Resources
-
-  Some special resources, such as `FPS`, are created by default by the framework.
-
   """
 
   alias __MODULE__

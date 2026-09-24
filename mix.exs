@@ -117,10 +117,9 @@ defmodule Spearmint.MixProject do
           Spearmint.System.WithoutEventSubscriptions,
           Spearmint.System.CreateStartupResources,
           Spearmint.System.Timer,
-          Spearmint.System.TrackFPS,
           Spearmint.System.Debug
         ],
-        Resources: [Spearmint.Resource, Spearmint.Resource.FPS],
+        Resources: [Spearmint.Resource],
         States: [Spearmint.State],
         Events: [Spearmint.Event],
         Queries: [Spearmint.Query],

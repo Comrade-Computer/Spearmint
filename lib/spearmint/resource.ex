@@ -31,9 +31,6 @@ defmodule Spearmint.Resource do
     Spearmint.Command.insert_resource!({Demo.Resources.Lobby, [max_players: 50]})
     ```
 
-  There are some special resources that are created automatically by the framework:
-  - currently none. The fps counter from ECSpanse was removed
-
   > #### Note  {: .info}
   > Resources can be created, updated or deleted only from synchronous systems.
 
